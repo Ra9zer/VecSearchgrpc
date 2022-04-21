@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+// import "google/protobuf/empty.proto";
+package gIndex;
+service IndexOpts{
+  //新建索引集
+  rpc initIndex (initPara) returns (Empty) {}
+  //打开已有索引集
+  rpc openIndex (alIndex) returns (Empty) {}
+  //对索引集添加数据
+  rpc addData(stream oneFloat) returns(Empty) {}
+  //对索引集添加数据（带标签）
+  rpc addDataWithLabels(stream withLabel) returns (Empty){}
+  //搜索索引集
+  rpc search(searchKeys) returns(searchResults) {}
+  //保存索引集
+  rpc save(alIndex) returns(Empty) {}
+  //获取推荐索引类型
+  rpc getOptimalIndex(indexInfo) returns(optimalIndex){}
+  //获取所有索引信息
+  rpc getAllIndexInfo(Empty) returns (stream initPara) {}
+  //获取所有索引信息，不用流实现
+  rpc getAllIndexInfo2(Empty) returns (indexInfos) {}
+  //不通过流传输数据
+  rpc simpleAddData(simpleData) returns (Empty) {}
+
+  rpc simpleAddDataWithLabels(simpleLabel) returns(Empty) {}
+}
+
+//空参、空返回值
+message Empty {}
+
+// 初始化索引的参数
+message initPara{
+  //向量维度
+  int32 dimension = 1;
+  //索引类型
+  indexTypes t = 2;
+  //索引集名称
+  string path = 3;
+  //索引特有参数
+  oneof indexPara{
+    SPTAGPara p1 = 7;
+    HNSWPara p2 = 8;
+    FAISSPara p3 = 9;
+    SCANNPara p4 = 10;
+  }
+  message SPTAGPara{
+    optional string valueType = 1;
+    optional string alogType = 2;
+    optional string distType = 3;
+  }
+  message HNSWPara{
+    int32 maxEle = 1;
+    optional HNSWDistType distType = 2;
+    optional int32 m = 3;
+    optional int32 efConstruction = 4;
+    enum HNSWDistType{
+      SPACE_IP = 0;
+      SPACE_L2 = 1;
+    }
+  }
+  message FAISSPara{
+    string iType = 1;
+    string distType = 2;
+  }
+  message SCANNPara{
+
+  }
+}
+
+//打开原来保存过的索引集
+message alIndex{
+  string path = 1;
+  indexTypes t = 2;
+}
+
+
+message oneFloat{
+  float ele = 1;
+}
+
+message withLabel{
+  repeated float ele = 1;
+  uint64 label = 2;
+}
+
+//搜索参数
+message searchKeys{
+  //搜索向量
+  repeated float keys = 1;
+  //结果集个数
+  int32 k = 2;
+  //索引集名称
+  string path = 3;
+  //索引类型
+  int32 t = 4;
+}
+
+//搜索结果
+message searchResults{
+  repeated int32 ids = 1;
+  repeated float dists = 2;
+}
+
+//向量信息
+message indexInfo{
+  int32 vectorNums = 1;
+  int32 vectorDim = 2;
+}
+
+//推荐信息
+message optimalIndex{
+  string key = 1;
+}
+
+//simple数据
+message simpleData{
+  int32 indexType = 1;
+  string indexName = 2;
+  repeated float datas = 3;
+}
+
+//simple数据+label
+message simpleLabel{
+  int32 indexType = 1;
+  string indexName = 2;
+  repeated float datas = 3;
+  repeated uint64 labels = 4;
+}
+
+message indexInfos {
+  repeated initPara infos = 1;
+}
+
+enum indexTypes {
+  SPTAG = 0;
+  HNSW = 1;
+  FAISS = 2;
+  SCANN = 3;
+  auto = 4;
+}
